@@ -11,10 +11,22 @@ import socket.BaseIOSocket;
 
 public class BaseIOServer implements Server {
 
+    private final ExecutorService executorService;
+    private final int backlog;
+
+    public BaseIOServer(int backlog) {
+        if (backlog < 1) {
+            this.backlog = 50;
+        } else {
+            this.backlog = backlog;
+        }
+        this.executorService = Executors.newFixedThreadPool(this.backlog);
+    }
+
     @Override
     public void run(String host, int port) {
         try (ServerSocket serverSocket = new ServerSocket()) {
-            serverSocket.bind(new InetSocketAddress("localhost", 8080));
+            serverSocket.bind(new InetSocketAddress("localhost", 8080), backlog);
             runServer(serverSocket);
         } catch (IOException e) {
             e.printStackTrace();
@@ -22,12 +34,10 @@ public class BaseIOServer implements Server {
     }
 
     private void runServer(ServerSocket serverSocket) {
-        ExecutorService executorService = Executors.newFixedThreadPool(500);
         System.out.println("start Server");
         while (true) {
             try {
                 Socket connection = serverSocket.accept();
-                connection.setSoTimeout(5000);
                 BaseIOSocket socket = new BaseIOSocket(connection);
                 executorService.execute(socket::start);
             } catch (SocketException e) {
