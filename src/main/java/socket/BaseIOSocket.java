@@ -1,9 +1,10 @@
 package socket;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,14 +34,16 @@ public class BaseIOSocket extends Thread {
         }
     }
 
-    private void echoMessage(String body) throws IOException {
-        PrintStream response = new PrintStream(socket.getOutputStream());
-        response.println("HTTP/1.1 200 OK");
-        response.println("Content-type: text/html");
-        response.println();
-        response.print(body);
-        response.flush();
-        response.close();
+    private void echoMessage(String body) {
+        try {
+            BufferedWriter response = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            response.write("HTTP/1.1 200 OK\r\n");
+            response.write("Content-type: text/html\r\n");
+            response.write("\r\n");
+            response.write(body);
+            response.flush();
+            response.close();
+        } catch (IOException ignored) {}
     }
 
     private String getRequestBody() throws IOException {
@@ -51,12 +54,27 @@ public class BaseIOSocket extends Thread {
     }
 
     private String getBody(BufferedReader bufferedReader, Map<String, String> header) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder();
-        int length = Integer.parseInt(header.get("Content-Length"));
-        for (int i = 0; i < length; i++) {
-            stringBuilder.append((char) bufferedReader.read());
+        String length = header.get("Content-Length");
+        if (length != null) {
+            return getLengthBody(bufferedReader, Integer.parseInt(length));
         }
-        return stringBuilder.toString();
+        return getNoneLengthBody(bufferedReader);
+    }
+
+    private String getLengthBody(BufferedReader reader, int length) throws IOException {
+        StringBuilder body = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            body.append((char) reader.read());
+        }
+        return body.toString();
+    }
+
+    private String getNoneLengthBody(BufferedReader reader) throws IOException {
+        StringBuilder body = new StringBuilder();
+        while (reader.ready()) {
+            body.append((char) reader.read());
+        }
+        return body.toString();
     }
 
     private Map<String, String> getStartLine(BufferedReader bufferedReader) throws IOException {
