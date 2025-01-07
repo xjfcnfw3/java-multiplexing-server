@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-public class BaseIOSocket extends Thread {
+public class BaseIOSocket implements Runnable {
 
     private final Socket socket;
 

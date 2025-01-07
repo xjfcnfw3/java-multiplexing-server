@@ -14,13 +14,13 @@ public class BaseIOServer implements Server {
     private final ExecutorService executorService;
     private final int backlog;
 
-    public BaseIOServer(int backlog) {
+    public BaseIOServer(int backlog, int threadCount) {
         if (backlog < 1) {
             this.backlog = 50;
         } else {
             this.backlog = backlog;
         }
-        this.executorService = Executors.newFixedThreadPool(this.backlog);
+        this.executorService = Executors.newFixedThreadPool(threadCount);
     }
 
     @Override
@@ -39,7 +39,7 @@ public class BaseIOServer implements Server {
             try {
                 Socket connection = serverSocket.accept();
                 BaseIOSocket socket = new BaseIOSocket(connection);
-                executorService.execute(socket::start);
+                executorService.execute(socket);
             } catch (SocketException e) {
                 e.printStackTrace();
             } catch (IOException e) {
